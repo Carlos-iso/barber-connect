@@ -1,134 +1,197 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useAuth } from './AuthContext';
-import { styleService, UserStyleConfig, styleType } from '@/services/styleService';
-import {
-  haircutStyles as defaultHaircuts,
-  beardStyles as defaultBeards,
-  machineHeights as defaultMachineHeights,
-  fadeTypes as defaultFadeTypes,
-  sideStyles as defaultSideStyles,
-  finishStyles as defaultFinishStyles,
-  scissorHeights as defaultScissorHeights,
-  beardHeights as defaultBeardHeights,
-  beardContours as defaultBeardContours,
-  cuttingMethods as defaultCuttingMethods
-} from '@/data/barberData';
-import { HaircutStyle, BeardStyle } from '@/types/barber';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { useAuth } from "./AuthContext";
+import { resourceData } from "@/data/resourceData";
+import { RESOURCES } from "@/data/resourcesConfig";
+import { HaircutStyle, BeardStyle } from "@/types/barber";
 
 interface CustomStylesContextType {
-  haircutStyles: HaircutStyle[];
-  beardStyles: BeardStyle[];
-  machineHeights: any[];
-  fadeTypes: any[];
-  sideStyles: any[];
-  finishStyles: any[];
-  scissorHeights: any[];
-  beardHeights: any[];
-  beardContours: any[];
-  cuttingMethods: any[];
-  loading: boolean;
-  updateStyleImage: (styleId: string, type: styleType, file: File) => Promise<boolean>;
-  resetStyleImage: (styleId: string, type: styleType) => Promise<boolean>;
+	haircutStyles: HaircutStyle[];
+	beardStyles: BeardStyle[];
+	machineHeights: any[];
+	fadeTypes: any[];
+	sideStyles: any[];
+	finishStyles: any[];
+	scissorHeights: any[];
+	beardHeights: any[];
+	beardContours: any[];
+	cuttingMethods: any[];
+	loading: boolean;
+	updateStyleImage: (
+		styleId: string,
+		type: any,
+		file: File,
+	) => Promise<boolean>;
+	resetStyleImage: (styleId: string, type: any) => Promise<boolean>;
+	reloadCuts: () => Promise<void>;
 }
 
-const CustomStylesContext = createContext<CustomStylesContextType | undefined>(undefined);
+const CustomStylesContext = createContext<CustomStylesContextType | undefined>(
+	undefined,
+);
 
-export function CustomStylesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  const [customConfigs, setCustomConfigs] = useState<UserStyleConfig[]>([]);
-  const [loading, setLoading] = useState(false);
+export function CustomStylesProvider({
+	children,
+}: {
+	children: React.ReactNode;
+}) {
+	const { user } = useAuth();
+	const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
+	const [beardStyles, setBeardStyles] = useState<BeardStyle[]>([]);
+	const [machineHeights, setMachineHeights] = useState<any[]>([]);
+	const [fadeTypes, setFadeTypes] = useState<any[]>([]);
+	const [sideStyles, setSideStyles] = useState<any[]>([]);
+	const [finishStyles, setFinishStyles] = useState<any[]>([]);
+	const [scissorHeights, setScissorHeights] = useState<any[]>([]);
+	const [beardHeights, setBeardHeights] = useState<any[]>([]);
+	const [beardContours, setBeardContours] = useState<any[]>([]);
+	const [cuttingMethods, setCuttingMethods] = useState<any[]>([]);
+	const [loading, setLoading] = useState(true);
 
-  // Load custom styles when user logs in
-  useEffect(() => {
-    if (user) {
-      setLoading(true);
-      styleService.getUserStyles(user.id)
-        .then(configs => {
-          setCustomConfigs(configs);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setCustomConfigs([]);
-    }
-  }, [user]);
+	const loadAllResources = async () => {
+		// Não tentar carregar se não houver usuário
+		if (!user) {
+			setHaircutStyles([]);
+			setBeardStyles([]);
+			setMachineHeights([]);
+			setFadeTypes([]);
+			setSideStyles([]);
+			setFinishStyles([]);
+			setScissorHeights([]);
+			setBeardHeights([]);
+			setBeardContours([]);
+			setCuttingMethods([]);
+			setLoading(false);
+			return;
+		}
 
-  // Merge logic helper
-  const mergeStyles = (defaultStyles: any[], type: styleType) => {
-    return defaultStyles.map(style => {
-      const config = customConfigs.find(c => c.style_id === style.id && c.type === type);
-      return config ? { ...style, imageData: config.custom_image_url } : style;
-    });
-  };
+		try {
+			// Carregar todos os resources em paralelo
+			const [
+				haircuts,
+				beards,
+				cuttingMethodsData,
+				machineHeightsData,
+				scissorHeightsData,
+				sideStylesData,
+				finishStylesData,
+				beardHeightsData,
+				beardContoursData,
+				fadeTypesData,
+			] = await Promise.all([
+				resourceData.getResourceItems("haircuts").catch(() => []),
+				resourceData.getResourceItems("beards").catch(() => []),
+				resourceData.getResourceItems("cutting-methods").catch(() => []),
+				resourceData.getResourceItems("machine-heights").catch(() => []),
+				resourceData.getResourceItems("scissor-heights").catch(() => []),
+				resourceData.getResourceItems("side-styles").catch(() => []),
+				resourceData.getResourceItems("finish-styles").catch(() => []),
+				resourceData.getResourceItems("beard-heights").catch(() => []),
+				resourceData.getResourceItems("beard-contours").catch(() => []),
+				resourceData.getResourceItems("fade-types").catch(() => []),
+			]);
 
-  const haircutStyles = mergeStyles(defaultHaircuts, 'hair');
-  const beardStyles = mergeStyles(defaultBeards, 'beard');
-  const machineHeights = mergeStyles([...defaultMachineHeights], 'machine-height');
-  const fadeTypes = mergeStyles([...defaultFadeTypes], 'fade-type');
-  const sideStyles = mergeStyles([...defaultSideStyles], 'side-style');
-  const finishStyles = mergeStyles([...defaultFinishStyles], 'finish-style');
-  const scissorHeights = mergeStyles([...defaultScissorHeights], 'scissor-height');
-  const beardHeights = mergeStyles([...defaultBeardHeights], 'beard-height');
-  const beardContours = mergeStyles([...defaultBeardContours], 'beard-contour');
-  const cuttingMethods = mergeStyles([...defaultCuttingMethods], 'haircut-method');
+			// Mapear haircuts para o formato esperado
+			const mappedHaircuts = haircuts.map((cut) => ({
+				id: cut._id || cut.id || "",
+				name: cut.name,
+				icon: cut.icon || "Scissors",
+				description: cut.description || "",
+				defaultImage: cut.defaultImage?.url || cut.backgroundImage?.url,
+			}));
 
-  const updateStyleImage = async (styleId: string, type: styleType, file: File) => {
-    if (!user) return false;
+			// Mapear beards para o formato esperado
+			const mappedBeards = beards.map((beard) => ({
+				id: beard._id || beard.id || "",
+				name: beard.name,
+				icon: beard.icon || "User",
+				description: beard.description || "",
+				defaultImage: beard.defaultImage?.url || beard.backgroundImage?.url,
+			}));
 
-    const publicUrl = await styleService.updateUserStyle(user.id, styleId, type, file);
-    if (publicUrl) {
-      setCustomConfigs(prev => {
-        const existing = prev.findIndex(c => c.style_id === styleId && c.type === type);
-        const newConfig: UserStyleConfig = { style_id: styleId, type, custom_image_url: publicUrl };
+			setHaircutStyles(mappedHaircuts);
+			setBeardStyles(mappedBeards);
+			setMachineHeights(machineHeightsData);
+			setFadeTypes(fadeTypesData);
+			setSideStyles(sideStylesData);
+			setFinishStyles(finishStylesData);
+			setScissorHeights(scissorHeightsData);
+			setBeardHeights(beardHeightsData);
+			setBeardContours(beardContoursData);
+			setCuttingMethods(cuttingMethodsData);
+		} catch (error) {
+			console.error("Erro ao carregar resources:", error);
+			setHaircutStyles([]);
+			setBeardStyles([]);
+			setMachineHeights([]);
+			setFadeTypes([]);
+			setSideStyles([]);
+			setFinishStyles([]);
+			setScissorHeights([]);
+			setBeardHeights([]);
+			setBeardContours([]);
+			setCuttingMethods([]);
+		} finally {
+			setLoading(false);
+		}
+	};
 
-        if (existing >= 0) {
-          const newConfigs = [...prev];
-          newConfigs[existing] = newConfig;
-          return newConfigs;
-        }
-        return [...prev, newConfig];
-      });
-      return true;
-    }
-    return false;
-  };
+	useEffect(() => {
+		loadAllResources();
+	}, [user]);
 
-  const resetStyleImage = async (styleId: string, type: styleType) => {
-    if (!user) return false;
+	const reloadCuts = async () => {
+		setLoading(true);
+		await loadAllResources();
+	};
 
-    const success = await styleService.deleteUserStyle(user.id, styleId, type);
-    if (success) {
-      setCustomConfigs(prev => prev.filter(c => !(c.style_id === styleId && c.type === type)));
-      return true;
-    }
-    return false;
-  };
+	// Placeholder functions - não implementadas ainda
+	const updateStyleImage = async (
+		styleId: string,
+		type: any,
+		file: File,
+	): Promise<boolean> => {
+		console.warn("updateStyleImage não implementado ainda");
+		return false;
+	};
 
-  return (
-    <CustomStylesContext.Provider value={{
-      haircutStyles,
-      beardStyles,
-      machineHeights,
-      fadeTypes,
-      sideStyles,
-      finishStyles,
-      scissorHeights,
-      beardHeights,
-      beardContours,
-      cuttingMethods,
-      loading,
-      updateStyleImage,
-      resetStyleImage
-    }}>
-      {children}
-    </CustomStylesContext.Provider>
-  );
+	const resetStyleImage = async (
+		styleId: string,
+		type: any,
+	): Promise<boolean> => {
+		console.warn("resetStyleImage não implementado ainda");
+		return false;
+	};
+
+	return (
+		<CustomStylesContext.Provider
+			value={{
+				haircutStyles,
+				beardStyles,
+				machineHeights,
+				fadeTypes,
+				sideStyles,
+				finishStyles,
+				scissorHeights,
+				beardHeights,
+				beardContours,
+				cuttingMethods,
+				loading,
+				updateStyleImage,
+				resetStyleImage,
+				reloadCuts,
+			}}
+		>
+			{children}
+		</CustomStylesContext.Provider>
+	);
 }
 
-export const useCustomStyles = () => {
-  const context = useContext(CustomStylesContext);
-  if (context === undefined) {
-    throw new Error('useCustomStyles must be used within a CustomStylesProvider');
-  }
-  return context;
-};
-
+export function useCustomStyles() {
+	const context = useContext(CustomStylesContext);
+	if (context === undefined) {
+		throw new Error(
+			"useCustomStyles must be used within a CustomStylesProvider",
+		);
+	}
+	return context;
+}
