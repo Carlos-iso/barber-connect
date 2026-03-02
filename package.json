@@ -12,7 +12,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"pull": "git pull origin main && npm install",
-		"push": "git status && git add src package.json .gitignore && git commit -m \"feat(front): fluxo, roles, imagens e atendimento\" && git push origin main"
+		"push": "git status && git add . && git commit -m \"feat(front): fluxo, roles, imagens e atendimento\" && git push origin main"
 	},
 	"dependencies": {
 		"@hookform/resolvers": "^3.10.0",
