@@ -3,11 +3,12 @@
 export type ServiceType = 'hair' | 'beard' | 'both';
 
 export interface HaircutStyle {
-  id: string;
-  name: string;
+  id: string; // ID do estilo de corte
+  name: string; // Nome do estilo de corte
   icon: string; // Nome do ícone Lucide
-  description?: string;
+  description?: string; // Descrição do estilo de corte
   defaultImage?: string; // URL/path da imagem padrão (será carregada via API no futuro)
+  defaultImageKey?: string; // Chave da imagem padrão (será usada para resetar a imagem customizada)
   imageData?: string; // Base64 da imagem customizada pelo usuário
 }
 
@@ -17,6 +18,7 @@ export interface BeardStyle {
   icon: string;
   description?: string;
   defaultImage?: string; // URL/path da imagem padrão (será carregada via API no futuro)
+  defaultImageKey?: string;
   imageData?: string; // Base64 da imagem customizada pelo usuário
 }
 

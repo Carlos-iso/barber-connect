@@ -39,67 +39,18 @@ const App = () => (
 								<Route path="/register" element={<Register />} />
 
 								{/* Protected Routes */}
-								<Route
-									path="/"
-									element={
-										<ProtectedRoute>
-											<Index />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/haircut"
-									element={
-										<ProtectedRoute>
-											<HaircutCatalog />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/haircut/details"
-									element={
-										<ProtectedRoute>
-											<HaircutDetails />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/beard"
-									element={
-										<ProtectedRoute>
-											<BeardCatalog />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/beard/details"
-									element={
-										<ProtectedRoute>
-											<BeardDetails />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/confirmation"
-									element={
-										<ProtectedRoute>
-											<Confirmation />
-										</ProtectedRoute>
-									}
-								/>
-								<Route
-									path="/barber-view"
-									element={
-										<ProtectedRoute>
-											<BarberView />
-										</ProtectedRoute>
-									}
-								/>
+								<Route path="/" element={<Index />} />
+								<Route path="/haircut" element={<HaircutCatalog />} />
+								<Route path="/haircut/details" element={<HaircutDetails />} />
+								<Route path="/beard" element={<BeardCatalog />} />
+								<Route path="/beard/details" element={<BeardDetails />} />
+								<Route path="/confirmation" element={<Confirmation />} />
+								<Route path="/barber-view" element={<BarberView />} />
 
 								<Route
 									path="/dashboard"
 									element={
-										<ProtectedRoute>
+										<ProtectedRoute allowedRoles={["barber", "admin"]}>
 											<Dashboard />
 										</ProtectedRoute>
 									}
@@ -107,7 +58,7 @@ const App = () => (
 								<Route
 									path="/dashboard/:resourceKey"
 									element={
-										<ProtectedRoute>
+										<ProtectedRoute allowedRoles={["barber", "admin"]}>
 											<ResourceList />
 										</ProtectedRoute>
 									}
@@ -115,7 +66,7 @@ const App = () => (
 								<Route
 									path="/dashboard/:resourceKey/novo"
 									element={
-										<ProtectedRoute>
+										<ProtectedRoute allowedRoles={["barber", "admin"]}>
 											<NewResource />
 										</ProtectedRoute>
 									}
@@ -123,7 +74,7 @@ const App = () => (
 								<Route
 									path="/dashboard/cortes/novo"
 									element={
-										<ProtectedRoute>
+										<ProtectedRoute allowedRoles={["barber", "admin"]}>
 											<NewCut />
 										</ProtectedRoute>
 									}

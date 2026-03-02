@@ -18,6 +18,7 @@ api.interceptors.request.use(
 		const token = getToken();
 		if (token) {
 			config.headers.Authorization = `Bearer ${token}`;
+			config.headers["x-access-token"] = token;
 		}
 		return config;
 	},
@@ -44,6 +45,19 @@ function getToken(): string | null {
 
 function setToken(token: string): void {
 	localStorage.setItem(TOKEN_KEY, token);
+}
+
+function normalizeToken(rawToken: unknown): string {
+	if (typeof rawToken === "string") return rawToken;
+	if (
+		rawToken &&
+		typeof rawToken === "object" &&
+		"token" in rawToken &&
+		typeof (rawToken as { token?: unknown }).token === "string"
+	) {
+		return (rawToken as { token: string }).token;
+	}
+	throw new Error("Token inválido no retorno da API");
 }
 
 function getUserId(): string | null {
@@ -76,6 +90,7 @@ export interface LoginResponse {
 		id: string;
 		name: string;
 		email: string;
+		role?: "user" | "barber" | "admin";
 		[key: string]: any;
 	};
 }
@@ -88,7 +103,8 @@ export interface RegisterData {
 
 async function login(email: string, password: string): Promise<LoginResponse> {
 	const response = await api.post("/users/login", { email, password });
-	const { token, user } = response.data;
+	const { token: rawToken, user } = response.data;
+	const token = normalizeToken(rawToken);
 
 	// Salvar no storage
 	setToken(token);
@@ -100,7 +116,8 @@ async function login(email: string, password: string): Promise<LoginResponse> {
 
 async function register(data: RegisterData): Promise<LoginResponse> {
 	const response = await api.post("/users/new", data);
-	const { token, user } = response.data;
+	const { token: rawToken, user } = response.data;
+	const token = normalizeToken(rawToken);
 
 	// Salvar no storage
 	setToken(token);
@@ -117,7 +134,7 @@ async function logout(): Promise<void> {
 async function getCurrentUser(): Promise<any> {
 	// Primeiro tenta pegar do storage
 	const cachedUser = getUserData();
-	if (cachedUser) {
+	if (cachedUser && cachedUser.role) {
 		return cachedUser;
 	}
 

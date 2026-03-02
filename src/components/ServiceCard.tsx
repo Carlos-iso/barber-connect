@@ -1,13 +1,15 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DynamicIcon } from './DynamicIcon';
 import { Pencil } from 'lucide-react';
+import { ImageWithFallback } from './ImageWithFallback';
 
 interface ServiceCardProps {
   icon: string;
   label: string;
   description?: string;
   defaultImage?: string;
+  defaultImageKey?: string;
   imageData?: string;
   selected?: boolean;
   onClick: () => void;
@@ -22,6 +24,7 @@ export function ServiceCard({
   label,
   description,
   defaultImage,
+  defaultImageKey,
   imageData,
   selected = false,
   onClick,
@@ -31,12 +34,6 @@ export function ServiceCard({
   compact = false,
 }: ServiceCardProps) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [imageError, setImageError] = useState(false);
-
-  useEffect(() => {
-    setImageError(false);
-  }, [imageData, defaultImage]);
-
   const handleClick = () => {
     setIsAnimating(true);
     onClick();
@@ -62,16 +59,17 @@ export function ServiceCard({
         aria-pressed={selected}
       >
         {/* Hierarquia: imageData (custom) → defaultImage → icon */}
-        {(imageData || defaultImage) && !imageError ? (
+        {(imageData || defaultImage || defaultImageKey) ? (
           <div className={cn(
             'rounded-xl overflow-hidden mx-auto border-2 border-border',
             compact ? 'h-20 w-20' : size === 'large' ? 'h-28 w-28' : 'h-24 w-24'
           )}>
-            <img
-              src={imageData || defaultImage}
+            <ImageWithFallback
+              imageUrl={imageData || defaultImage}
+              imageKey={!imageData ? defaultImageKey : undefined}
+              iconName={icon}
               alt={label}
-              className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
+              imageClassName="w-full h-full object-cover"
             />
           </div>
         ) : (

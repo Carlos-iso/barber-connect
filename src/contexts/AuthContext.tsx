@@ -5,6 +5,7 @@ interface User {
 	id: string;
 	name: string;
 	email: string;
+	role?: "user" | "barber" | "admin";
 	[key: string]: any;
 }
 

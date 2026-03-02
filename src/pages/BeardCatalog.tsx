@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { ServiceCard } from '@/components/ServiceCard';
-import { StyleEditModal } from '@/components/StyleEditModal';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { BeardStyle } from '@/types/barber';
@@ -10,26 +8,11 @@ import { BeardStyle } from '@/types/barber';
 const BeardCatalog = () => {
   const navigate = useNavigate();
   const { selection, setBeardStyle } = useSelection();
-  const { beardStyles, updateStyleImage, resetStyleImage } = useCustomStyles();
-  const [editingStyle, setEditingStyle] = useState<BeardStyle | null>(null);
+  const { beardStyles } = useCustomStyles();
 
   const handleSelect = (style: BeardStyle) => {
     setBeardStyle(style);
     navigate('/beard/details');
-  };
-
-  const handleEditSave = async (name: string, file?: File) => {
-    if (editingStyle && file) {
-      await updateStyleImage(editingStyle.id, 'beard', file);
-    }
-    setEditingStyle(null);
-  };
-
-  const handleEditReset = async () => {
-    if (editingStyle) {
-      await resetStyleImage(editingStyle.id, 'beard');
-    }
-    setEditingStyle(null);
   };
 
   const getProgress = () => {
@@ -71,28 +54,15 @@ const BeardCatalog = () => {
                 label={style.name}
                 description={style.description}
                 defaultImage={style.defaultImage}
+                defaultImageKey={style.defaultImageKey}
                 imageData={style.imageData}
                 selected={selection.beardStyle?.id === style.id}
                 onClick={() => handleSelect(style)}
-                onEdit={() => setEditingStyle(style)}
-                editable
               />
             </div>
           ))}
         </div>
       </main>
-
-      {editingStyle && (
-        <StyleEditModal
-          isOpen={!!editingStyle}
-          onClose={() => setEditingStyle(null)}
-          styleName={editingStyle.name}
-          styleIcon={editingStyle.icon}
-          currentImage={editingStyle.imageData || editingStyle.defaultImage}
-          onSave={handleEditSave}
-          onReset={handleEditReset}
-        />
-      )}
     </div>
   );
 };

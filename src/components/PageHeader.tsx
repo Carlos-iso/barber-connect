@@ -14,6 +14,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, showBack = true, backTo, progress }: PageHeaderProps) {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
+  const canAccessDashboard = user?.role === 'barber' || user?.role === 'admin';
 
   const handleBack = () => {
     if (backTo) {
@@ -21,6 +22,14 @@ export function PageHeader({ title, showBack = true, backTo, progress }: PageHea
     } else {
       navigate(-1);
     }
+  };
+
+  const handleNew = () => {
+    if (canAccessDashboard) {
+      navigate('/dashboard');
+      return;
+    }
+    navigate('/login', { state: { from: '/dashboard' } });
   };
 
   return (
@@ -42,16 +51,28 @@ export function PageHeader({ title, showBack = true, backTo, progress }: PageHea
             {title}
           </h1>
 
-          {user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={signOut}
-              className="text-muted-foreground hover:text-destructive"
-            >
-              Sair
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {canAccessDashboard && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNew}
+                className="text-muted-foreground"
+              >
+                Novo
+              </Button>
+            )}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                Sair
+              </Button>
+            )}
+          </div>
         </div>
 
         {progress && (

@@ -1,8 +1,6 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { ServiceCard } from '@/components/ServiceCard';
-import { StyleEditModal } from '@/components/StyleEditModal';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { HaircutStyle } from '@/types/barber';
@@ -18,26 +16,11 @@ const HaircutCatalog = () => {
     return { current: 1, total: 3 };
   };
 
-  const { haircutStyles, updateStyleImage, resetStyleImage } = useCustomStyles();
-  const [editingStyle, setEditingStyle] = useState<HaircutStyle | null>(null);
+  const { haircutStyles } = useCustomStyles();
 
   const handleSelect = (style: HaircutStyle) => {
     setHaircutStyle(style);
     navigate('/haircut/details');
-  };
-
-  const handleEditSave = async (name: string, file?: File) => {
-    if (editingStyle && file) {
-      await updateStyleImage(editingStyle.id, 'hair', file);
-    }
-    setEditingStyle(null);
-  };
-
-  const handleEditReset = async () => {
-    if (editingStyle) {
-      await resetStyleImage(editingStyle.id, 'hair');
-    }
-    setEditingStyle(null);
   };
 
   return (
@@ -65,28 +48,15 @@ const HaircutCatalog = () => {
                 label={style.name}
                 description={style.description}
                 defaultImage={style.defaultImage}
+                defaultImageKey={style.defaultImageKey}
                 imageData={style.imageData}
                 selected={selection.haircutStyle?.id === style.id}
                 onClick={() => handleSelect(style)}
-                onEdit={() => setEditingStyle(style)}
-                editable
               />
             </div>
           ))}
         </div>
       </main>
-
-      {editingStyle && (
-        <StyleEditModal
-          isOpen={!!editingStyle}
-          onClose={() => setEditingStyle(null)}
-          styleName={editingStyle.name}
-          styleIcon={editingStyle.icon}
-          currentImage={editingStyle.imageData || editingStyle.defaultImage}
-          onSave={handleEditSave}
-          onReset={handleEditReset}
-        />
-      )}
     </div>
   );
 };

@@ -1,27 +1,32 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useAuth } from "./AuthContext";
-import { resourceData } from "@/data/resourceData";
-import { RESOURCES } from "@/data/resourcesConfig";
+import { MediaField, resourceData, ResourceItem } from "@/data/resourceData";
 import { HaircutStyle, BeardStyle } from "@/types/barber";
+
+interface StyleOption extends ResourceItem {
+	defaultImageKey?: string;
+	backgroundImageKey?: string;
+	imageData?: string;
+}
 
 interface CustomStylesContextType {
 	haircutStyles: HaircutStyle[];
 	beardStyles: BeardStyle[];
-	machineHeights: any[];
-	fadeTypes: any[];
-	sideStyles: any[];
-	finishStyles: any[];
-	scissorHeights: any[];
-	beardHeights: any[];
-	beardContours: any[];
-	cuttingMethods: any[];
+	machineHeights: StyleOption[];
+	fadeTypes: StyleOption[];
+	sideStyles: StyleOption[];
+	finishStyles: StyleOption[];
+	scissorHeights: StyleOption[];
+	beardHeights: StyleOption[];
+	beardContours: StyleOption[];
+	cuttingMethods: StyleOption[];
 	loading: boolean;
 	updateStyleImage: (
 		styleId: string,
-		type: any,
+		type: string,
 		file: File,
 	) => Promise<boolean>;
-	resetStyleImage: (styleId: string, type: any) => Promise<boolean>;
+	resetStyleImage: (styleId: string, type: string) => Promise<boolean>;
 	reloadCuts: () => Promise<void>;
 }
 
@@ -37,33 +42,49 @@ export function CustomStylesProvider({
 	const { user } = useAuth();
 	const [haircutStyles, setHaircutStyles] = useState<HaircutStyle[]>([]);
 	const [beardStyles, setBeardStyles] = useState<BeardStyle[]>([]);
-	const [machineHeights, setMachineHeights] = useState<any[]>([]);
-	const [fadeTypes, setFadeTypes] = useState<any[]>([]);
-	const [sideStyles, setSideStyles] = useState<any[]>([]);
-	const [finishStyles, setFinishStyles] = useState<any[]>([]);
-	const [scissorHeights, setScissorHeights] = useState<any[]>([]);
-	const [beardHeights, setBeardHeights] = useState<any[]>([]);
-	const [beardContours, setBeardContours] = useState<any[]>([]);
-	const [cuttingMethods, setCuttingMethods] = useState<any[]>([]);
+	const [machineHeights, setMachineHeights] = useState<StyleOption[]>([]);
+	const [fadeTypes, setFadeTypes] = useState<StyleOption[]>([]);
+	const [sideStyles, setSideStyles] = useState<StyleOption[]>([]);
+	const [finishStyles, setFinishStyles] = useState<StyleOption[]>([]);
+	const [scissorHeights, setScissorHeights] = useState<StyleOption[]>([]);
+	const [beardHeights, setBeardHeights] = useState<StyleOption[]>([]);
+	const [beardContours, setBeardContours] = useState<StyleOption[]>([]);
+	const [cuttingMethods, setCuttingMethods] = useState<StyleOption[]>([]);
 	const [loading, setLoading] = useState(true);
 
-	const loadAllResources = async () => {
-		// Não tentar carregar se não houver usuário
-		if (!user) {
-			setHaircutStyles([]);
-			setBeardStyles([]);
-			setMachineHeights([]);
-			setFadeTypes([]);
-			setSideStyles([]);
-			setFinishStyles([]);
-			setScissorHeights([]);
-			setBeardHeights([]);
-			setBeardContours([]);
-			setCuttingMethods([]);
-			setLoading(false);
-			return;
+	const normalizeImageUrl = (value?: MediaField | string): string | undefined => {
+		if (!value) return undefined;
+		if (typeof value === "string") return value;
+		if (typeof value === "object" && typeof value.url === "string") {
+			return value.url;
 		}
+		return undefined;
+	};
 
+	const normalizeImageKey = (value?: MediaField | string): string | undefined => {
+		if (!value || typeof value === "string") return undefined;
+		return typeof value.key === "string" ? value.key : undefined;
+	};
+
+	const normalizeItem = (
+		item: ResourceItem,
+		labelField: "label" | "name",
+		fallbackIcon: string,
+	): StyleOption => ({
+		...item,
+		id: item.id || item._id || "",
+		label: item.label || item.name || "",
+		name: item.name || item.label || "",
+		icon: item.icon || fallbackIcon,
+		description: item.description || "",
+		defaultImage: normalizeImageUrl(item.defaultImage),
+		defaultImageKey: normalizeImageKey(item.defaultImage),
+		backgroundImage: normalizeImageUrl(item.backgroundImage),
+		backgroundImageKey: normalizeImageKey(item.backgroundImage),
+		[labelField]: item[labelField] || item.name || item.label || "",
+	});
+
+	const loadAllResources = async () => {
 		try {
 			// Carregar todos os resources em paralelo
 			const [
@@ -92,32 +113,56 @@ export function CustomStylesProvider({
 
 			// Mapear haircuts para o formato esperado
 			const mappedHaircuts = haircuts.map((cut) => ({
-				id: cut._id || cut.id || "",
+				id: cut.id || cut._id || "",
 				name: cut.name,
 				icon: cut.icon || "Scissors",
 				description: cut.description || "",
-				defaultImage: cut.defaultImage?.url || cut.backgroundImage?.url,
+				defaultImage:
+					normalizeImageUrl(cut.defaultImage) ||
+					normalizeImageUrl(cut.backgroundImage),
+				defaultImageKey:
+					normalizeImageKey(cut.defaultImage) ||
+					normalizeImageKey(cut.backgroundImage),
 			}));
 
 			// Mapear beards para o formato esperado
 			const mappedBeards = beards.map((beard) => ({
-				id: beard._id || beard.id || "",
+				id: beard.id || beard._id || "",
 				name: beard.name,
 				icon: beard.icon || "User",
 				description: beard.description || "",
-				defaultImage: beard.defaultImage?.url || beard.backgroundImage?.url,
+				defaultImage:
+					normalizeImageUrl(beard.defaultImage) ||
+					normalizeImageUrl(beard.backgroundImage),
+				defaultImageKey:
+					normalizeImageKey(beard.defaultImage) ||
+					normalizeImageKey(beard.backgroundImage),
 			}));
 
 			setHaircutStyles(mappedHaircuts);
 			setBeardStyles(mappedBeards);
-			setMachineHeights(machineHeightsData);
-			setFadeTypes(fadeTypesData);
-			setSideStyles(sideStylesData);
-			setFinishStyles(finishStylesData);
-			setScissorHeights(scissorHeightsData);
-			setBeardHeights(beardHeightsData);
-			setBeardContours(beardContoursData);
-			setCuttingMethods(cuttingMethodsData);
+			setMachineHeights(
+				machineHeightsData.map((item) => normalizeItem(item, "label", "Ruler")),
+			);
+			setFadeTypes(fadeTypesData.map((item) => normalizeItem(item, "label", "Layers")));
+			setSideStyles(
+				sideStylesData.map((item) => normalizeItem(item, "label", "ArrowLeftRight")),
+			);
+			setFinishStyles(
+				finishStylesData.map((item) => normalizeItem(item, "label", "Sparkles")),
+			);
+			setScissorHeights(
+				scissorHeightsData.map((item) => normalizeItem(item, "label", "Scissors")),
+			);
+			setBeardHeights(
+				beardHeightsData.map((item) => normalizeItem(item, "label", "Ruler")),
+			);
+			setBeardContours(
+				beardContoursData.map((item) => normalizeItem(item, "label", "Circle")),
+			);
+			setCuttingMethods(
+				cuttingMethodsData.map((item) => normalizeItem(item, "label", "Wrench")),
+			);
 		} catch (error) {
 			console.error("Erro ao carregar resources:", error);
 			setHaircutStyles([]);
@@ -147,7 +192,7 @@ export function CustomStylesProvider({
 	// Placeholder functions - não implementadas ainda
 	const updateStyleImage = async (
 		styleId: string,
-		type: any,
+		type: string,
 		file: File,
 	): Promise<boolean> => {
 		console.warn("updateStyleImage não implementado ainda");
@@ -156,7 +201,7 @@ export function CustomStylesProvider({
 
 	const resetStyleImage = async (
 		styleId: string,
-		type: any,
+		type: string,
 	): Promise<boolean> => {
 		console.warn("resetStyleImage não implementado ainda");
 		return false;

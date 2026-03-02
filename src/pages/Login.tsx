@@ -1,16 +1,19 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 const Login = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const navigate = useNavigate();
+	const location = useLocation();
 	const { toast } = useToast();
 	const { signIn } = useAuth();
 
@@ -20,8 +23,8 @@ const Login = () => {
 
 		try {
 			await signIn(email, password);
-			// Redireciona para o dashboard após o login bem-sucedido
-			navigate("/dashboard");
+			const redirectPath = (location.state as { from?: string } | null)?.from;
+			navigate(redirectPath || "/", { replace: true });
 		} catch (error: any) {
 			toast({
 				title: "Erro ao fazer login",
@@ -61,13 +64,28 @@ const Login = () => {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="password">Senha</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-							/>
+							<div className="relative">
+								<Input
+									id="password"
+									type={showPassword ? "text" : "password"}
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									required
+									className="pr-10"
+								/>
+								<button
+									type="button"
+									onClick={() => setShowPassword((prev) => !prev)}
+									className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+									aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</button>
+							</div>
 						</div>
 
 						<Button className="w-full" type="submit" disabled={loading}>

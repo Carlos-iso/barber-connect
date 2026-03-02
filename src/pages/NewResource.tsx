@@ -36,8 +36,16 @@ const NewResource = () => {
 		setLoading(true);
 
 		try {
+			const normalizedId = name
+				.trim()
+				.toLowerCase()
+				.replace(/\s+/g, "-")
+				.replace(/[^a-z0-9-_]/g, "");
+
 			const formData = new FormData();
+			formData.append("id", normalizedId || Date.now().toString());
 			formData.append("name", name);
+			formData.append("label", name);
 			if (description) formData.append("description", description);
 			if (icon) formData.append("icon", icon);
 			if (image) formData.append("defaultImage", image);

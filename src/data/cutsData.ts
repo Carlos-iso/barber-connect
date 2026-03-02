@@ -31,12 +31,23 @@ async function getCutById(id: string): Promise<Cut> {
 }
 
 async function createCut(formData: FormData): Promise<Cut> {
-	const response = await api.post("/haircuts", formData, {
-		headers: {
-			"Content-Type": "multipart/form-data",
-		},
-	});
-	return response.data;
+	const headers = {
+		"Content-Type": "multipart/form-data",
+	};
+	const userId = authData.getUserId();
+
+	try {
+		if (!userId) {
+			throw new Error("Usuário não autenticado para criar corte");
+		}
+		const response = await api.post(`/haircuts/${userId}/new`, formData, {
+			headers,
+		});
+		return response.data?.upload || response.data?.data || response.data;
+	} catch (error) {
+		const response = await api.post("/haircuts", formData, { headers });
+		return response.data?.upload || response.data?.data || response.data;
+	}
 }
 
 async function updateCut(id: string, formData: FormData): Promise<Cut> {
@@ -45,7 +56,7 @@ async function updateCut(id: string, formData: FormData): Promise<Cut> {
 			"Content-Type": "multipart/form-data",
 		},
 	});
-	return response.data;
+	return response.data?.upload || response.data?.data || response.data;
 }
 
 async function deleteCut(id: string): Promise<void> {

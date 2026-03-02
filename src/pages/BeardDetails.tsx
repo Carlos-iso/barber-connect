@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { OptionSection } from '@/components/OptionSection';
@@ -7,8 +6,6 @@ import { Button } from '@/components/ui/button';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { ArrowRight } from 'lucide-react';
-import { StyleEditModal } from '@/components/StyleEditModal';
-import { styleType } from '@/services/styleService';
 
 const BeardDetails = () => {
   const navigate = useNavigate();
@@ -16,32 +13,8 @@ const BeardDetails = () => {
   const { beardDetails } = selection;
   const {
     beardHeights,
-    beardContours,
-    updateStyleImage,
-    resetStyleImage
+    beardContours
   } = useCustomStyles();
-
-  const [editingOption, setEditingOption] = useState<{
-    id: string;
-    name: string;
-    icon: string;
-    image: string;
-    type: styleType;
-  } | null>(null);
-
-  const handleEditSave = async (name: string, file?: File) => {
-    if (editingOption && file) {
-      await updateStyleImage(editingOption.id, editingOption.type, file);
-    }
-    setEditingOption(null);
-  };
-
-  const handleEditReset = async () => {
-    if (editingOption) {
-      await resetStyleImage(editingOption.id, editingOption.type);
-    }
-    setEditingOption(null);
-  };
 
   const handleNext = () => {
     navigate('/confirmation');
@@ -73,19 +46,12 @@ const BeardDetails = () => {
               icon={height.icon}
               label={height.label}
               defaultImage={height.defaultImage}
+              defaultImageKey={height.defaultImageKey}
               imageData={height.imageData}
               selected={beardDetails.height === height.id}
               onClick={() => setBeardDetails({
                 height: beardDetails.height === height.id ? null : height.id
               })}
-              onEdit={() => setEditingOption({
-                id: height.id,
-                name: height.label,
-                icon: height.icon,
-                image: height.imageData || height.defaultImage,
-                type: 'beard-height'
-              })}
-              editable
             />
           ))}
         </OptionSection>
@@ -98,19 +64,12 @@ const BeardDetails = () => {
               icon={contour.icon}
               label={contour.label}
               defaultImage={contour.defaultImage}
+              defaultImageKey={contour.defaultImageKey}
               imageData={contour.imageData}
               selected={beardDetails.contour === contour.id}
               onClick={() => setBeardDetails({
                 contour: beardDetails.contour === contour.id ? null : contour.id
               })}
-              onEdit={() => setEditingOption({
-                id: contour.id,
-                name: contour.label,
-                icon: contour.icon,
-                image: contour.imageData || contour.defaultImage,
-                type: 'beard-contour'
-              })}
-              editable
             />
           ))}
         </OptionSection>
@@ -129,18 +88,6 @@ const BeardDetails = () => {
           </Button>
         </div>
       </div>
-
-      {editingOption && (
-        <StyleEditModal
-          isOpen={!!editingOption}
-          onClose={() => setEditingOption(null)}
-          styleName={editingOption.name}
-          styleIcon={editingOption.icon}
-          currentImage={editingOption.image}
-          onSave={handleEditSave}
-          onReset={handleEditReset}
-        />
-      )}
     </div>
   );
 };

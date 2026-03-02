@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/PageHeader';
 import { OptionSection } from '@/components/OptionSection';
@@ -7,20 +7,9 @@ import { ServiceCard } from '@/components/ServiceCard';
 
 import { Button } from '@/components/ui/button';
 import { useSelection } from '@/contexts/SelectionContext';
-
-import {
-  // We'll get these from context now
-  // machineHeights,
-  // scissorHeights,
-  // sideStyles,
-  // finishStyles,
-  // fadeTypes
-} from '@/data/barberData';
 import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { styleConfigs, CuttingMethod, SideStyle, FinishStyle, FadeType, ScissorHeight } from '@/types/barber';
 import { ArrowRight } from 'lucide-react';
-import { StyleEditModal } from '@/components/StyleEditModal';
-import { styleType } from '@/services/styleService';
 
 const HaircutDetails = () => {
   const navigate = useNavigate();
@@ -32,18 +21,8 @@ const HaircutDetails = () => {
     sideStyles,
     fadeTypes,
     finishStyles,
-    cuttingMethods,
-    updateStyleImage,
-    resetStyleImage
+    cuttingMethods
   } = useCustomStyles();
-
-  const [editingOption, setEditingOption] = useState<{
-    id: string;
-    name: string;
-    icon: string;
-    image: string;
-    type: styleType;
-  } | null>(null);
 
   // Configuration based on selected style
 
@@ -74,20 +53,6 @@ const HaircutDetails = () => {
       setHaircutDetails({ finish: availableFinishStyles[0].id as FinishStyle });
     }
   }, [styleId, availableMethods, availableSideStyles, availableFinishStyles, haircutDetails, setHaircutDetails]);
-
-  const handleEditSave = async (name: string, file?: File) => {
-    if (editingOption && file) {
-      await updateStyleImage(editingOption.id, editingOption.type, file);
-    }
-    setEditingOption(null);
-  };
-
-  const handleEditReset = async () => {
-    if (editingOption) {
-      await resetStyleImage(editingOption.id, editingOption.type);
-    }
-    setEditingOption(null);
-  };
 
   const handleNext = () => {
     if (selection.serviceType === "both") {
@@ -136,17 +101,10 @@ const HaircutDetails = () => {
                   label={fade.label}
                   description={fade.description}
                   defaultImage={fade.defaultImage}
+                  defaultImageKey={fade.defaultImageKey}
                   imageData={fade.imageData}
                   selected={haircutDetails.fadeType === fade.id}
                   onClick={() => setHaircutDetails({ fadeType: fade.id as FadeType })}
-                  onEdit={() => setEditingOption({
-                    id: fade.id,
-                    name: fade.label,
-                    icon: fade.icon,
-                    image: fade.imageData || fade.defaultImage,
-                    type: 'fade-type'
-                  })}
-                  editable
                   compact
                 />
               );
@@ -163,19 +121,12 @@ const HaircutDetails = () => {
                 icon={method.icon}
                 label={method.label}
                 defaultImage={method.backgroundImage}
+                defaultImageKey={method.backgroundImageKey}
                 imageData={method.imageData}
                 selected={haircutDetails.method === method.id}
                 onClick={() => setHaircutDetails({
                   method: haircutDetails.method === method.id ? null : method.id as CuttingMethod
                 })}
-                onEdit={() => setEditingOption({
-                  id: method.id,
-                  name: method.label,
-                  icon: method.icon,
-                  image: method.imageData || method.backgroundImage,
-                  type: 'haircut-method'
-                })}
-                editable
               />
             ))}
           </OptionSection>
@@ -190,19 +141,12 @@ const HaircutDetails = () => {
                 icon={height.icon}
                 label={height.label}
                 defaultImage={height.defaultImage}
+                defaultImageKey={height.defaultImageKey}
                 imageData={height.imageData}
                 selected={haircutDetails.machineHeight === height.id}
                 onClick={() => setHaircutDetails({
                   machineHeight: haircutDetails.machineHeight === height.id ? null : height.id
                 })}
-                onEdit={() => setEditingOption({
-                  id: height.id,
-                  name: height.label,
-                  icon: height.icon,
-                  image: height.imageData || height.defaultImage,
-                  type: 'machine-height'
-                })}
-                editable
               />
             ))}
           </OptionSection>
@@ -224,19 +168,12 @@ const HaircutDetails = () => {
                 icon={height.icon}
                 label={height.label}
                 defaultImage={height.defaultImage}
+                defaultImageKey={height.defaultImageKey}
                 imageData={height.imageData}
                 selected={haircutDetails.scissorHeight === height.id}
                 onClick={() => setHaircutDetails({
                   scissorHeight: haircutDetails.scissorHeight === height.id ? null : height.id as ScissorHeight
                 })}
-                onEdit={() => setEditingOption({
-                  id: height.id,
-                  name: height.label,
-                  icon: height.icon,
-                  image: height.imageData || height.defaultImage,
-                  type: 'scissor-height'
-                })}
-                editable
               />
             ))}
           </OptionSection>
@@ -251,19 +188,12 @@ const HaircutDetails = () => {
                 icon={style.icon}
                 label={style.label}
                 defaultImage={style.defaultImage}
+                defaultImageKey={style.defaultImageKey}
                 imageData={style.imageData}
                 selected={haircutDetails.sideStyle === style.id}
                 onClick={() => setHaircutDetails({
                   sideStyle: haircutDetails.sideStyle === style.id ? null : style.id as SideStyle
                 })}
-                onEdit={() => setEditingOption({
-                  id: style.id,
-                  name: style.label,
-                  icon: style.icon,
-                  image: style.imageData || style.defaultImage,
-                  type: 'side-style'
-                })}
-                editable
               />
             ))}
           </OptionSection>
@@ -278,19 +208,12 @@ const HaircutDetails = () => {
                 icon={finish.icon}
                 label={finish.label}
                 defaultImage={finish.defaultImage}
+                defaultImageKey={finish.defaultImageKey}
                 imageData={finish.imageData}
                 selected={haircutDetails.finish === finish.id}
                 onClick={() => setHaircutDetails({
                   finish: haircutDetails.finish === finish.id ? null : finish.id as FinishStyle
                 })}
-                onEdit={() => setEditingOption({
-                  id: finish.id,
-                  name: finish.label,
-                  icon: finish.icon,
-                  image: finish.imageData || finish.defaultImage,
-                  type: 'finish-style'
-                })}
-                editable
               />
             ))}
           </OptionSection>
@@ -328,18 +251,6 @@ const HaircutDetails = () => {
         </div>
       </div>
 
-
-      {editingOption && (
-        <StyleEditModal
-          isOpen={!!editingOption}
-          onClose={() => setEditingOption(null)}
-          styleName={editingOption.name}
-          styleIcon={editingOption.icon}
-          currentImage={editingOption.image}
-          onSave={handleEditSave}
-          onReset={handleEditReset}
-        />
-      )}
     </div>
   );
 };

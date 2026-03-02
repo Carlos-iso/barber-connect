@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Scissors, User, Users } from 'lucide-react';
 import { useSelection } from '@/contexts/SelectionContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { authData } from '@/data/authData';
 import { Button } from '@/components/ui/button';
 import { ServiceType } from '@/types/barber';
 
@@ -9,6 +10,16 @@ const Index = () => {
   const navigate = useNavigate();
   const { setServiceType } = useSelection();
   const { user, signOut } = useAuth();
+  const hasToken = Boolean(authData.getToken());
+  const canAccessDashboard = user?.role === 'barber' || user?.role === 'admin';
+
+  const handleNew = () => {
+    if (canAccessDashboard) {
+      navigate('/dashboard');
+      return;
+    }
+    navigate('/login', { state: { from: '/dashboard' } });
+  };
 
   const handleServiceSelect = (type: ServiceType) => {
     setServiceType(type);
@@ -24,18 +35,40 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col safe-top safe-bottom">
       {/* Header */}
       <header className="relative pt-12 pb-8 px-6 text-center">
-        {user && (
-          <div className="absolute top-4 right-4">
+        {hasToken && canAccessDashboard && (
+          <div className="absolute top-4 left-4">
             <Button
               variant="ghost"
               size="sm"
-              onClick={signOut}
-              className="text-muted-foreground hover:text-destructive"
+              onClick={() => navigate('/dashboard')}
+              className="text-muted-foreground"
             >
-              Sair
+              Dashboard
             </Button>
           </div>
         )}
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+            {canAccessDashboard && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleNew}
+                className="text-muted-foreground"
+              >
+                Novo
+              </Button>
+            )}
+            {user && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={signOut}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                Sair
+              </Button>
+            )}
+          </div>
         <div className="w-20 h-20 mx-auto mb-6 bg-primary rounded-full flex items-center justify-center">
           <Scissors className="h-10 w-10 text-primary-foreground" />
         </div>

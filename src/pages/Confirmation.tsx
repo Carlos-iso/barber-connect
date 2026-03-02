@@ -1,9 +1,13 @@
 import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { SummaryItem } from '@/components/SummaryItem';
 import { Button } from '@/components/ui/button';
 import { useSelection } from '@/contexts/SelectionContext';
+import { ordersData, ServiceItem } from '@/data/ordersData';
+import { useToast } from '@/hooks/use-toast';
 import { DynamicIcon } from '@/components/DynamicIcon';
+import { ImageWithFallback } from '@/components/ImageWithFallback';
 import { Check } from 'lucide-react';
 import {
   cuttingMethods,
@@ -19,9 +23,43 @@ import {
 const Confirmation = () => {
   const navigate = useNavigate();
   const { selection } = useSelection();
+  const { toast } = useToast();
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleConfirm = () => {
-    navigate('/barber-view');
+  const buildServices = (): ServiceItem[] => {
+    const services: ServiceItem[] = [];
+
+    if (hasHaircut && selection.haircutStyle) {
+      services.push({ name: `Cabelo - ${selection.haircutStyle.name}`, price: 0 });
+    }
+
+    if (hasBeard && selection.beardStyle) {
+      services.push({ name: `Barba - ${selection.beardStyle.name}`, price: 0 });
+    }
+
+    return services;
+  };
+
+  const handleConfirm = async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const services = buildServices();
+      await ordersData.createOrder({
+        customerName: "Cliente",
+        services,
+        totalPrice: services.reduce((sum, item) => sum + item.price, 0),
+      });
+      navigate('/barber-view');
+    } catch (error: any) {
+      toast({
+        title: "Erro ao finalizar atendimento",
+        description: error.response?.data?.message || error.message || "Erro desconhecido",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const getProgress = () => {
@@ -71,10 +109,11 @@ const Confirmation = () => {
               <div className="text-center">
                 <div className="w-36 h-36 rounded-2xl border-2 border-primary overflow-hidden bg-muted mx-auto">
                   {(selection.haircutStyle.imageData || selection.haircutStyle.defaultImage) ? (
-                    <img
-                      src={selection.haircutStyle.imageData || selection.haircutStyle.defaultImage}
+                    <ImageWithFallback
+                      imageUrl={selection.haircutStyle.imageData || selection.haircutStyle.defaultImage}
+                      imageKey={!selection.haircutStyle.imageData ? selection.haircutStyle.defaultImageKey : undefined}
+                      iconName={selection.haircutStyle.icon}
                       alt={selection.haircutStyle.name}
-                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -90,10 +129,11 @@ const Confirmation = () => {
               <div className="text-center">
                 <div className="w-36 h-36 rounded-2xl border-2 border-primary overflow-hidden bg-muted mx-auto">
                   {(selection.beardStyle.imageData || selection.beardStyle.defaultImage) ? (
-                    <img
-                      src={selection.beardStyle.imageData || selection.beardStyle.defaultImage}
+                    <ImageWithFallback
+                      imageUrl={selection.beardStyle.imageData || selection.beardStyle.defaultImage}
+                      imageKey={!selection.beardStyle.imageData ? selection.beardStyle.defaultImageKey : undefined}
+                      iconName={selection.beardStyle.icon}
                       alt={selection.beardStyle.name}
-                      className="w-full h-full object-cover"
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -226,11 +266,12 @@ const Confirmation = () => {
         <div className="container max-w-2xl mx-auto">
           <Button
             onClick={handleConfirm}
+            disabled={submitting}
             className="w-full h-14 text-lg font-semibold bg-success hover:bg-success/90"
             size="lg"
           >
             <Check className="mr-2 h-5 w-5" />
-            Confirmar e mostrar ao barbeiro
+            {submitting ? "Finalizando..." : "Confirmar e mostrar ao barbeiro"}
           </Button>
         </div>
       </div>

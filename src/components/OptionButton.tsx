@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { DynamicIcon } from './DynamicIcon';
 import { Pencil } from 'lucide-react';
+import { ImageWithFallback } from './ImageWithFallback';
 
 interface OptionButtonProps {
   icon: string;
@@ -12,6 +13,7 @@ interface OptionButtonProps {
   fullWidth?: boolean;
   backgroundImage?: string;
   defaultImage?: string;
+  defaultImageKey?: string;
   imageData?: string;
   editable?: boolean;
 }
@@ -25,16 +27,11 @@ export function OptionButton({
   fullWidth = false,
   backgroundImage,
   defaultImage,
+  defaultImageKey,
   imageData,
   editable = false,
 }: OptionButtonProps) {
   const [isAnimating, setIsAnimating] = useState(false);
-  const [imageError, setImageError] = useState(false);
-
-  // Reset error state when image source changes
-  useEffect(() => {
-    setImageError(false);
-  }, [imageData, defaultImage]);
 
   const handleClick = () => {
     setIsAnimating(true);
@@ -48,11 +45,6 @@ export function OptionButton({
   };
 
   const displayImage = imageData || defaultImage || backgroundImage;
-
-  // Reset error state when image source changes
-  useEffect(() => {
-    setImageError(false);
-  }, [displayImage]);
 
   return (
     <div className={cn("relative", fullWidth && "w-full")}>
@@ -77,15 +69,16 @@ export function OptionButton({
           backgroundImage && 'has-bg'
         )}
       >
-        {displayImage && !imageError ? (
+        {displayImage || defaultImageKey ? (
           <div className={cn(
             'rounded-xl overflow-hidden mb-2 border-2 border-border h-20 w-20',
           )}>
-            <img
-              src={displayImage}
+            <ImageWithFallback
+              imageUrl={displayImage}
+              imageKey={!imageData && !backgroundImage ? defaultImageKey : undefined}
+              iconName={icon}
               alt={label}
-              className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
+              imageClassName="w-full h-full object-cover"
             />
           </div>
         ) : (
@@ -120,4 +113,3 @@ export function OptionButton({
     </div>
   );
 }
-

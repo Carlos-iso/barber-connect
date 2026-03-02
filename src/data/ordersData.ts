@@ -31,7 +31,7 @@ async function createOrder(data: CreateOrderData): Promise<Order> {
 		date: data.date || new Date().toISOString(),
 		status: "pending",
 	});
-	return response.data;
+	return response.data?.data || response.data;
 }
 
 async function getOrdersByUser(): Promise<Order[]> {
