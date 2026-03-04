@@ -4,7 +4,7 @@ import { resourceData, ResourceItem } from "@/data/resourceData";
 import { getResourceConfig } from "@/data/resourcesConfig";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ArrowLeft, Plus, Loader2, Pencil } from "lucide-react";
+import { ArrowLeft, Plus, Loader2, Pencil, Trash2 } from "lucide-react";
 import * as Icons from "lucide-react";
 import {
 	Dialog,
@@ -24,6 +24,9 @@ const ResourceList = () => {
 	const [loading, setLoading] = useState(true);
 	const [editingItem, setEditingItem] = useState<ResourceItem | null>(null);
 	const [editImage, setEditImage] = useState<File | null>(null);
+	const [editName, setEditName] = useState("");
+	const [editIcon, setEditIcon] = useState("");
+	const [editDescription, setEditDescription] = useState("");
 	const [imageFit, setImageFit] = useState<"cover" | "contain">("cover");
 	const [imageFitByItem, setImageFitByItem] = useState<Record<string, "cover" | "contain">>(
 		() => {
@@ -36,6 +39,7 @@ const ResourceList = () => {
 		},
 	);
 	const [savingImage, setSavingImage] = useState(false);
+	const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 	const navigate = useNavigate();
 	const { toast } = useToast();
 
@@ -66,25 +70,33 @@ const ResourceList = () => {
 		setImageFit(imageFitByItem[mapKey] || "cover");
 		setEditingItem(item);
 		setEditImage(null);
+		setEditName(item.name || item.label || "");
+		setEditIcon(item.icon || config?.icon || "Circle");
+		setEditDescription(item.description || "");
 	};
 
-	const handleSaveImage = async () => {
+	const handleSaveItem = async () => {
 		if (!resourceKey || !editingItem || !(editingItem._id || editingItem.id)) return;
 		const itemId = editingItem._id || editingItem.id || "";
 		const mapKey = `${resourceKey}:${itemId}`;
 
 		setSavingImage(true);
 		try {
-			if (editImage) {
-				const formData = new FormData();
-				formData.append("defaultImage", editImage);
+			const formData = new FormData();
+			const normalizedName = editName.trim();
 
-				await resourceData.updateResourceItem(
-					resourceKey,
-					itemId,
-					formData,
-				);
+			formData.append("name", normalizedName);
+			formData.append("label", normalizedName);
+			formData.append("icon", editIcon.trim() || (config?.icon || "Circle"));
+			formData.append("description", editDescription.trim());
+
+			if (editImage) {
+				const imageFieldName =
+					resourceKey === "cutting-methods" ? "backgroundImage" : "defaultImage";
+				formData.append(imageFieldName, editImage);
 			}
+
+			await resourceData.updateResourceItem(resourceKey, itemId, formData);
 
 			setImageFitByItem((prev) => {
 				const next = { ...prev, [mapKey]: imageFit };
@@ -92,20 +104,46 @@ const ResourceList = () => {
 				return next;
 			});
 
-			toast({ title: "Configuração de imagem salva!" });
+			toast({ title: "Item atualizado com sucesso!" });
 			setEditingItem(null);
-			if (editImage) {
-				await loadItems();
-			}
+			await loadItems();
 		} catch (error: any) {
 			toast({
-				title: "Erro ao atualizar imagem",
+				title: "Erro ao atualizar item",
 				description:
 					error.response?.data?.message || error.message || "Erro desconhecido",
 				variant: "destructive",
 			});
 		} finally {
 			setSavingImage(false);
+		}
+	};
+
+	const handleDeleteItem = async (item: ResourceItem) => {
+		if (!resourceKey) return;
+		const itemId = item._id || item.id;
+		if (!itemId) return;
+		const displayName = item.name || item.label || "item";
+
+		const shouldDelete = window.confirm(
+			`Deseja excluir "${displayName}"? Esta ação não pode ser desfeita.`,
+		);
+		if (!shouldDelete) return;
+
+		setDeletingItemId(itemId);
+		try {
+			await resourceData.deleteResourceItem(resourceKey, itemId);
+			toast({ title: "Item removido com sucesso!" });
+			await loadItems();
+		} catch (error: any) {
+			toast({
+				title: "Erro ao remover item",
+				description:
+					error.response?.data?.message || error.message || "Erro desconhecido",
+				variant: "destructive",
+			});
+		} finally {
+			setDeletingItemId(null);
 		}
 	};
 
@@ -205,14 +243,27 @@ const ResourceList = () => {
 												"w-12 h-12 text-muted-foreground",
 											)
 										)}
-										<Button
-											size="icon"
-											variant="secondary"
-											className="absolute top-2 right-2 h-8 w-8"
-											onClick={() => handleOpenEditImage(item)}
-										>
-											<Pencil className="w-4 h-4" />
-										</Button>
+										<div className="absolute top-2 right-2 flex gap-1">
+											<Button
+												size="icon"
+												variant="secondary"
+												className="h-8 w-8"
+												onClick={() => handleOpenEditImage(item)}
+												aria-label={`Editar ${displayName}`}
+											>
+												<Pencil className="w-4 h-4" />
+											</Button>
+											<Button
+												size="icon"
+												variant="destructive"
+												className="h-8 w-8"
+												onClick={() => handleDeleteItem(item)}
+												disabled={deletingItemId === (item._id || item.id)}
+												aria-label={`Excluir ${displayName}`}
+											>
+												<Trash2 className="w-4 h-4" />
+											</Button>
+										</div>
 										</div>
 										<CardContent className="p-3">
 											<p className="font-medium text-sm truncate">{displayName}</p>
@@ -243,7 +294,7 @@ const ResourceList = () => {
 			>
 				<DialogContent>
 					<DialogHeader>
-						<DialogTitle>Editar Imagem</DialogTitle>
+						<DialogTitle>Editar Item</DialogTitle>
 					</DialogHeader>
 					<div className="space-y-2">
 						<Label htmlFor="resource-image">Nova imagem</Label>
@@ -255,7 +306,34 @@ const ResourceList = () => {
 						/>
 					</div>
 					<div className="space-y-2">
-						<Label htmlFor="resource-fit">Estilo de corte</Label>
+						<Label htmlFor="resource-name">Nome</Label>
+						<Input
+							id="resource-name"
+							value={editName}
+							onChange={(e) => setEditName(e.target.value)}
+							placeholder="Nome do item"
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="resource-icon">Ícone (Lucide)</Label>
+						<Input
+							id="resource-icon"
+							value={editIcon}
+							onChange={(e) => setEditIcon(e.target.value)}
+							placeholder="Ex: Scissors, Circle, Target..."
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="resource-description">Descrição</Label>
+						<Input
+							id="resource-description"
+							value={editDescription}
+							onChange={(e) => setEditDescription(e.target.value)}
+							placeholder="Descrição do item (opcional)"
+						/>
+					</div>
+					<div className="space-y-2">
+						<Label htmlFor="resource-fit">Ajuste da imagem</Label>
 						<select
 							id="resource-fit"
 							value={imageFit}
@@ -274,8 +352,11 @@ const ResourceList = () => {
 						>
 							Cancelar
 						</Button>
-						<Button onClick={handleSaveImage} disabled={savingImage}>
-							{savingImage ? "Salvando..." : "Salvar imagem"}
+						<Button
+							onClick={handleSaveItem}
+							disabled={savingImage || !editName.trim()}
+						>
+							{savingImage ? "Salvando..." : "Salvar alterações"}
 						</Button>
 					</DialogFooter>
 				</DialogContent>

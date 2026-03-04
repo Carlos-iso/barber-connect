@@ -14,7 +14,7 @@ interface PageHeaderProps {
 export function PageHeader({ title, showBack = true, backTo, progress }: PageHeaderProps) {
   const navigate = useNavigate();
   const { signOut, user } = useAuth();
-  const canAccessDashboard = user?.role === 'barber' || user?.role === 'admin';
+  const canAccessDashboard = (user?.role ?? []).includes('barber') || (user?.role ?? []).includes('admin');
 
   const handleBack = () => {
     if (backTo) {

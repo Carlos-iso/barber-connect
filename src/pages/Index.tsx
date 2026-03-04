@@ -11,7 +11,7 @@ const Index = () => {
   const { setServiceType } = useSelection();
   const { user, signOut } = useAuth();
   const hasToken = Boolean(authData.getToken());
-  const canAccessDashboard = user?.role === 'barber' || user?.role === 'admin';
+  const canAccessDashboard = (user?.role ?? []).includes('barber') || (user?.role ?? []).includes('admin');
 
   const handleNew = () => {
     if (canAccessDashboard) {

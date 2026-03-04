@@ -6,6 +6,7 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
 const TOKEN_KEY = "barber_token";
 const USER_ID_KEY = "barber_user_id";
 const USER_DATA_KEY = "barber_user_data";
+export type UserRole = "user" | "barber" | "admin";
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -90,7 +91,8 @@ export interface LoginResponse {
 		id: string;
 		name: string;
 		email: string;
-		role?: "user" | "barber" | "admin";
+		role?: UserRole[];
+		attendanceCount?: number;
 		[key: string]: any;
 	};
 }
@@ -101,10 +103,34 @@ export interface RegisterData {
 	password: string;
 }
 
+function normalizeRoles(rawRole: unknown): UserRole[] {
+	const source = Array.isArray(rawRole)
+		? rawRole
+		: typeof rawRole === "string"
+			? [rawRole]
+			: [];
+	const hasAdmin = source.includes("admin");
+	const hasBarber = source.includes("barber");
+	if (hasAdmin) return ["user", "admin"];
+	if (hasBarber) return ["user", "barber"];
+	return ["user"];
+}
+
+function normalizeUser(user: any) {
+	if (!user) return user;
+	return {
+		...user,
+		role: normalizeRoles(user.role),
+		attendanceCount:
+			typeof user.attendanceCount === "number" ? user.attendanceCount : 0,
+	};
+}
+
 async function login(email: string, password: string): Promise<LoginResponse> {
 	const response = await api.post("/users/login", { email, password });
-	const { token: rawToken, user } = response.data;
+	const { token: rawToken, user: rawUser } = response.data;
 	const token = normalizeToken(rawToken);
+	const user = normalizeUser(rawUser);
 
 	// Salvar no storage
 	setToken(token);
@@ -116,8 +142,9 @@ async function login(email: string, password: string): Promise<LoginResponse> {
 
 async function register(data: RegisterData): Promise<LoginResponse> {
 	const response = await api.post("/users/new", data);
-	const { token: rawToken, user } = response.data;
+	const { token: rawToken, user: rawUser } = response.data;
 	const token = normalizeToken(rawToken);
+	const user = normalizeUser(rawUser);
 
 	// Salvar no storage
 	setToken(token);
@@ -135,7 +162,7 @@ async function getCurrentUser(): Promise<any> {
 	// Primeiro tenta pegar do storage
 	const cachedUser = getUserData();
 	if (cachedUser && cachedUser.role) {
-		return cachedUser;
+		return normalizeUser(cachedUser);
 	}
 
 	// Se não tiver, busca da API
@@ -145,7 +172,7 @@ async function getCurrentUser(): Promise<any> {
 	}
 
 	const response = await api.get(`/users/${userId}`);
-	const user = response.data;
+	const user = normalizeUser(response.data);
 	setUserData(user);
 
 	return user;

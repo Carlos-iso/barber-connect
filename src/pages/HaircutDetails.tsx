@@ -27,16 +27,66 @@ const HaircutDetails = () => {
   // Configuration based on selected style
 
   const styleId = haircutStyle?.id || 'default';
-  const config = styleConfigs[styleId] || styleConfigs.default;
-  const isFadeStyle = styleId === 'fade';
+  const styleName = (haircutStyle?.name || "").toLowerCase();
+  const isFadeStyle =
+    styleId === 'fade' ||
+    styleName.includes('degrad') ||
+    styleName.includes('fade');
+  const config = isFadeStyle
+    ? styleConfigs.fade
+    : (styleConfigs[styleId] || styleConfigs.default);
 
   // Filter options based on style config
   const availableMethods = cuttingMethods.filter(m =>
     config.methods.includes(m.id as CuttingMethod)
   );
-  const availableSideStyles = sideStyles.filter(s =>
-    config.sideStyles.includes(s.id as SideStyle)
-  );
+  const availableSideStyles = (() => {
+    const byConfig = sideStyles.filter(s =>
+      config.sideStyles.includes(s.id as SideStyle)
+    );
+
+    if (!isFadeStyle) {
+      return byConfig;
+    }
+
+    if (byConfig.length > 0) {
+      return byConfig;
+    }
+
+    // Fallback semântico estrito para degradê:
+    // apenas 0, 0.5 e Navalhado (na ordem).
+    const normalized = sideStyles.map((s) => ({
+      item: s,
+      text: `${s.id} ${(s as any).name || ""} ${(s as any).label || ""}`.toLowerCase(),
+    }));
+
+    const zero = normalized.find(({ text }) =>
+      (/\b0\b/.test(text) || /\bzero\b/.test(text)) &&
+      !text.includes("0.5") &&
+      !text.includes("0,5") &&
+      !text.includes("half")
+    )?.item;
+    const zeroHalf = normalized.find(({ text }) =>
+      text.includes("0.5") ||
+      text.includes("0,5") ||
+      text.includes("zero_half") ||
+      text.includes("half") ||
+      text.includes("meio") ||
+      text.includes("médio") ||
+      text.includes("medio")
+    )?.item;
+    const razor = normalized.find(({ text }) =>
+      text.includes("navalh") || text.includes("razor")
+    )?.item;
+
+    const strictFadeOptions = [zero, zeroHalf, razor].filter(Boolean) as typeof sideStyles;
+    if (strictFadeOptions.length > 0) {
+      return strictFadeOptions;
+    }
+
+    // Fallback seguro: nunca esconder Laterais no degradê.
+    return sideStyles;
+  })();
   const availableFinishStyles = finishStyles.filter(f =>
     config.finishStyles.includes(f.id as FinishStyle)
   );
@@ -79,7 +129,8 @@ const HaircutDetails = () => {
     haircutDetails.finish
   ].filter(Boolean).length;
 
-  const isComplete = selectionCount >= 2;
+  const hasRequiredFadeType = !isFadeStyle || Boolean(haircutDetails.fadeType);
+  const isComplete = selectionCount >= 2 && hasRequiredFadeType;
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -90,6 +141,26 @@ const HaircutDetails = () => {
       />
 
       <main className="flex-1 container max-w-2xl mx-auto px-4 py-6 space-y-8">
+        {/* Cutting Method - Show if more than 1 option */}
+        {availableMethods.length > 1 && (
+          <OptionSection title="Método de Corte">
+            {availableMethods.map(method => (
+              <OptionButton
+                key={method.id}
+                icon={method.icon}
+                label={method.label}
+                defaultImage={method.backgroundImage}
+                defaultImageKey={method.backgroundImageKey}
+                imageData={method.imageData}
+                selected={haircutDetails.method === method.id}
+                onClick={() => setHaircutDetails({
+                  method: haircutDetails.method === method.id ? null : method.id as CuttingMethod
+                })}
+              />
+            ))}
+          </OptionSection>
+        )}
+
         {/* Fade Type - Only for Fade style */}
         {isFadeStyle && (
           <OptionSection title="Tipo de Degradê">
@@ -109,26 +180,6 @@ const HaircutDetails = () => {
                 />
               );
             })}
-          </OptionSection>
-        )}
-
-        {/* Cutting Method - Show if more than 1 option */}
-        {availableMethods.length > 1 && (
-          <OptionSection title="Método de Corte">
-            {availableMethods.map(method => (
-              <OptionButton
-                key={method.id}
-                icon={method.icon}
-                label={method.label}
-                defaultImage={method.backgroundImage}
-                defaultImageKey={method.backgroundImageKey}
-                imageData={method.imageData}
-                selected={haircutDetails.method === method.id}
-                onClick={() => setHaircutDetails({
-                  method: haircutDetails.method === method.id ? null : method.id as CuttingMethod
-                })}
-              />
-            ))}
           </OptionSection>
         )}
 
@@ -160,7 +211,7 @@ const HaircutDetails = () => {
         {/* Let's show it if method is NOT strictly machine-only (i.e. 'scissors' is selected OR style implies mixed). */}
         {/* Actually simpler: Show if method is 'scissors' OR (style is 'fade' and method is 'machine' -> commonly means fade sides, scissors top?) */}
         {/* Let's just follow the user instruction: "Colocar aba TOPO ... para tesoura". */}
-        {(haircutDetails.method === "scissors" || styleId === 'fade' || styleId === 'social') && (
+        {(haircutDetails.method === "scissors" || isFadeStyle || styleId === 'social') && (
           <OptionSection title="Topo (Tesoura)">
             {scissorHeights.map((height) => (
               <OptionButton

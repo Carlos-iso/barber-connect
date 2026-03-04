@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { authData, LoginResponse } from "@/data/authData";
+import { authData, UserRole } from "@/data/authData";
 
 interface User {
 	id: string;
 	name: string;
 	email: string;
-	role?: "user" | "barber" | "admin";
+	role?: UserRole[];
+	attendanceCount?: number;
 	[key: string]: any;
 }
 
