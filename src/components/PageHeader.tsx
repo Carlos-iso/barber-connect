@@ -52,6 +52,15 @@ export function PageHeader({ title, showBack = true, backTo, progress }: PageHea
           </h1>
 
           <div className="flex items-center gap-2">
+            {!user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/login')}
+              >
+                Entrar
+              </Button>
+            )}
             {canAccessDashboard && (
               <Button
                 variant="ghost"

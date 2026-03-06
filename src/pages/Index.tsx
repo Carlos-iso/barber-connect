@@ -48,6 +48,15 @@ const Index = () => {
           </div>
         )}
         <div className="absolute top-4 right-4 flex items-center gap-2">
+            {!user && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate('/login')}
+              >
+                Entrar
+              </Button>
+            )}
             {canAccessDashboard && (
               <Button
                 variant="ghost"
