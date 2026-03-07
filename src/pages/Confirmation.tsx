@@ -4,25 +4,26 @@ import { PageHeader } from '@/components/PageHeader';
 import { SummaryItem } from '@/components/SummaryItem';
 import { Button } from '@/components/ui/button';
 import { useSelection } from '@/contexts/SelectionContext';
+import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { ordersData, ServiceItem } from '@/data/ordersData';
 import { useToast } from '@/hooks/use-toast';
 import { DynamicIcon } from '@/components/DynamicIcon';
 import { ImageWithFallback } from '@/components/ImageWithFallback';
 import { Check } from 'lucide-react';
-import {
-  cuttingMethods,
-  machineHeights,
-  scissorHeights,
-  sideStyles,
-  finishStyles,
-  fadeTypes,
-  beardHeights,
-  beardContours
-} from '@/data/barberData';
 
 const Confirmation = () => {
   const navigate = useNavigate();
   const { selection } = useSelection();
+  const {
+    cuttingMethods,
+    machineHeights,
+    scissorHeights,
+    sideStyles,
+    finishStyles,
+    fadeTypes,
+    beardHeights,
+    beardContours
+  } = useCustomStyles();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
 
@@ -77,11 +78,20 @@ const Confirmation = () => {
   };
 
   const getLabel = (items: readonly { id: string; label: string }[], id: string | null) => {
-    return items.find(item => item.id === id)?.label || '-';
+    if (!id) return null;
+    return items.find(item => item.id === id)?.label ?? null;
   };
 
   const hasHaircut = selection.serviceType === 'hair' || selection.serviceType === 'both';
   const hasBeard = selection.serviceType === 'beard' || selection.serviceType === 'both';
+  const haircutMethodLabel = getLabel(cuttingMethods, selection.haircutDetails.method);
+  const machineHeightLabel = getLabel(machineHeights, selection.haircutDetails.machineHeight);
+  const scissorHeightLabel = getLabel(scissorHeights, selection.haircutDetails.scissorHeight);
+  const fadeTypeLabel = getLabel(fadeTypes, selection.haircutDetails.fadeType);
+  const sideStyleLabel = getLabel(sideStyles, selection.haircutDetails.sideStyle);
+  const finishLabel = getLabel(finishStyles, selection.haircutDetails.finish);
+  const beardHeightLabel = getLabel(beardHeights, selection.beardDetails.height);
+  const beardContourLabel = getLabel(beardContours, selection.beardDetails.contour);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -173,51 +183,51 @@ const Confirmation = () => {
                     value={selection.haircutStyle.name}
                   />
 
-                  {selection.haircutDetails.method && (
+                  {haircutMethodLabel && (
                     <SummaryItem
                       icon="Scissors"
                       label="Método"
-                      value={getLabel(cuttingMethods, selection.haircutDetails.method)}
+                      value={haircutMethodLabel}
                     />
                   )}
 
-                  {selection.haircutDetails.method === 'machine' && selection.haircutDetails.machineHeight && (
+                  {selection.haircutDetails.method === 'machine' && machineHeightLabel && (
                     <SummaryItem
                       icon="Ruler"
                       label="Altura"
-                      value={getLabel(machineHeights, selection.haircutDetails.machineHeight)}
+                      value={machineHeightLabel}
                     />
                   )}
 
-                  {selection.haircutDetails.scissorHeight && (
+                  {scissorHeightLabel && (
                     <SummaryItem
                       icon="Ruler"
                       label="Topo"
-                      value={getLabel(scissorHeights, selection.haircutDetails.scissorHeight)}
+                      value={scissorHeightLabel}
                     />
                   )}
 
-                  {selection.haircutStyle?.id === 'fade' && selection.haircutDetails.fadeType && (
+                  {selection.haircutStyle?.id === 'fade' && fadeTypeLabel && (
                     <SummaryItem
                       icon="TrendingDown"
                       label="Tipo de Degradê"
-                      value={getLabel(fadeTypes, selection.haircutDetails.fadeType)}
+                      value={fadeTypeLabel}
                     />
                   )}
 
-                  {selection.haircutDetails.sideStyle && (
+                  {sideStyleLabel && (
                     <SummaryItem
                       icon="TrendingDown"
                       label="Laterais"
-                      value={getLabel(sideStyles, selection.haircutDetails.sideStyle)}
+                      value={sideStyleLabel}
                     />
                   )}
 
-                  {selection.haircutDetails.finish && (
+                  {finishLabel && (
                     <SummaryItem
                       icon="Target"
                       label="Acabamento"
-                      value={getLabel(finishStyles, selection.haircutDetails.finish)}
+                      value={finishLabel}
                     />
                   )}
                 </div>
@@ -239,19 +249,19 @@ const Confirmation = () => {
                     value={selection.beardStyle.name}
                   />
 
-                  {selection.beardDetails.height && (
+                  {beardHeightLabel && (
                     <SummaryItem
                       icon="Minus"
                       label="Altura"
-                      value={getLabel(beardHeights, selection.beardDetails.height)}
+                      value={beardHeightLabel}
                     />
                   )}
 
-                  {selection.beardDetails.contour && (
+                  {beardContourLabel && (
                     <SummaryItem
                       icon="Target"
                       label="Contorno"
-                      value={getLabel(beardContours, selection.beardDetails.contour)}
+                      value={beardContourLabel}
                     />
                   )}
                 </div>

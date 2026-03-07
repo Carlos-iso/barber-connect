@@ -2,19 +2,22 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SummaryItem } from '@/components/SummaryItem';
 import { useSelection } from '@/contexts/SelectionContext';
+import { useCustomStyles } from '@/contexts/CustomStylesContext';
 import { Check, RefreshCw } from 'lucide-react';
-import { 
-  cuttingMethods, 
-  machineHeights, 
-  sideStyles, 
-  finishStyles,
-  beardHeights,
-  beardContours 
-} from '@/data/barberData';
 
 const BarberView = () => {
   const navigate = useNavigate();
   const { selection, resetSelection } = useSelection();
+  const {
+    cuttingMethods,
+    machineHeights,
+    scissorHeights,
+    sideStyles,
+    finishStyles,
+    fadeTypes,
+    beardHeights,
+    beardContours
+  } = useCustomStyles();
 
   const handleNewService = () => {
     resetSelection();
@@ -22,11 +25,20 @@ const BarberView = () => {
   };
 
   const getLabel = (items: readonly { id: string; label: string }[], id: string | null) => {
-    return items.find(item => item.id === id)?.label || '-';
+    if (!id) return null;
+    return items.find(item => item.id === id)?.label ?? null;
   };
 
   const hasHaircut = selection.serviceType === 'hair' || selection.serviceType === 'both';
   const hasBeard = selection.serviceType === 'beard' || selection.serviceType === 'both';
+  const haircutMethodLabel = getLabel(cuttingMethods, selection.haircutDetails.method);
+  const machineHeightLabel = getLabel(machineHeights, selection.haircutDetails.machineHeight);
+  const scissorHeightLabel = getLabel(scissorHeights, selection.haircutDetails.scissorHeight);
+  const fadeTypeLabel = getLabel(fadeTypes, selection.haircutDetails.fadeType);
+  const sideStyleLabel = getLabel(sideStyles, selection.haircutDetails.sideStyle);
+  const finishLabel = getLabel(finishStyles, selection.haircutDetails.finish);
+  const beardHeightLabel = getLabel(beardHeights, selection.beardDetails.height);
+  const beardContourLabel = getLabel(beardContours, selection.beardDetails.contour);
 
   return (
     <div className="min-h-screen bg-primary flex flex-col safe-top safe-bottom">
@@ -61,28 +73,48 @@ const BarberView = () => {
                   label="Estilo"
                   value={selection.haircutStyle.name}
                 />
-                <SummaryItem
-                  icon="Scissors"
-                  label="Método"
-                  value={getLabel(cuttingMethods, selection.haircutDetails.method)}
-                />
-                {selection.haircutDetails.method === 'machine' && (
+                {haircutMethodLabel && (
+                  <SummaryItem
+                    icon="Scissors"
+                    label="Método"
+                    value={haircutMethodLabel}
+                  />
+                )}
+                {selection.haircutDetails.method === 'machine' && machineHeightLabel && (
                   <SummaryItem
                     icon="Ruler"
                     label="Altura"
-                    value={getLabel(machineHeights, selection.haircutDetails.machineHeight)}
+                    value={machineHeightLabel}
                   />
                 )}
-                <SummaryItem
-                  icon="TrendingDown"
-                  label="Laterais"
-                  value={getLabel(sideStyles, selection.haircutDetails.sideStyle)}
-                />
-                <SummaryItem
-                  icon="Target"
-                  label="Acabamento"
-                  value={getLabel(finishStyles, selection.haircutDetails.finish)}
-                />
+                {scissorHeightLabel && (
+                  <SummaryItem
+                    icon="Ruler"
+                    label="Topo"
+                    value={scissorHeightLabel}
+                  />
+                )}
+                {selection.haircutStyle.id === 'fade' && fadeTypeLabel && (
+                  <SummaryItem
+                    icon="TrendingDown"
+                    label="Tipo de Degradê"
+                    value={fadeTypeLabel}
+                  />
+                )}
+                {sideStyleLabel && (
+                  <SummaryItem
+                    icon="TrendingDown"
+                    label="Laterais"
+                    value={sideStyleLabel}
+                  />
+                )}
+                {finishLabel && (
+                  <SummaryItem
+                    icon="Target"
+                    label="Acabamento"
+                    value={finishLabel}
+                  />
+                )}
               </div>
             </div>
           )}
@@ -102,16 +134,20 @@ const BarberView = () => {
                   label="Estilo"
                   value={selection.beardStyle.name}
                 />
-                <SummaryItem
-                  icon="Minus"
-                  label="Altura"
-                  value={getLabel(beardHeights, selection.beardDetails.height)}
-                />
-                <SummaryItem
-                  icon="Target"
-                  label="Contorno"
-                  value={getLabel(beardContours, selection.beardDetails.contour)}
-                />
+                {beardHeightLabel && (
+                  <SummaryItem
+                    icon="Minus"
+                    label="Altura"
+                    value={beardHeightLabel}
+                  />
+                )}
+                {beardContourLabel && (
+                  <SummaryItem
+                    icon="Target"
+                    label="Contorno"
+                    value={beardContourLabel}
+                  />
+                )}
               </div>
             </div>
           )}
